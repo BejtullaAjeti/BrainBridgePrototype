@@ -1,6 +1,8 @@
 Backend Setup Guide
 
+
 Dependencies
+
 
 This backend project uses the following dependencies:
 
@@ -39,7 +41,10 @@ xunit.runner.console
 xunit.runner.visualstudio
 
 
+
 (we used the latest version for all of them)
+
+
 
 
 
@@ -48,15 +53,22 @@ Database
 Database: MariaDB
 Jwt Key: Uses HS256 web token from a secret key
 
+
+
 Install Dependencies:
 
 dotnet restore
+
+
 
 Generate Database Schema (Migrations)
 
 dotnet ef migrations add InitialCreate
 
 dotnet ef database update
+
+
+
 
 Testing
 
