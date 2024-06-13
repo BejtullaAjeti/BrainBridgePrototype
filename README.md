@@ -48,19 +48,22 @@ Database
 Database: MariaDB
 Jwt Key: Uses HS256 web token from a secret key
 
-Install Dependencies
+Install Dependencies:
 
 dotnet restore
 
 Generate Database Schema (Migrations)
 
 dotnet ef migrations add InitialCreate
+
 dotnet ef database update
 
 Testing
 
 Unit tests are implemented using xUnit. Run tests with:
+
 dotnet test
 
 Run the Application
+
 dotnet run
