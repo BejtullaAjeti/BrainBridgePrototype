@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using BrainBridgePrototype.Models;
-using BrainBridgePrototype.Models;
 
 namespace BrainBridgePrototype.Data
 {

@@ -2,9 +2,6 @@
 using BrainBridgePrototype.DTOs;
 using BrainBridgePrototype.Models;
 using BrainBridgePrototype.Repositories;
-using BrainBridgePrototype.DTOs;
-using BrainBridgePrototype.Repositories;
-using BrainBridgePrototype.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -58,14 +55,28 @@ namespace BrainBridgePrototype.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             try
             {
-                var post = await _postService.UpdatePost(id, postDto, userId);
-                return Ok(post);
+                var post = await _postService.GetPostById(id);
+
+                if (post == null)
+                {
+                    return NotFound();
+                }
+
+                if (userId != post.UserId && !User.IsInRole("Admin"))
+                {
+                    return Forbid(); 
+                }
+                var updatedPost = await _postService.UpdatePost(id, postDto, userId);
+                return Ok(updatedPost);
             }
             catch (UnauthorizedAccessException)
             {
                 return Forbid();
             }
         }
+
+
+
 
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
@@ -74,5 +85,6 @@ namespace BrainBridgePrototype.Controllers
             await _postService.DeletePost(id);
             return Ok();
         }
+
     }
 }

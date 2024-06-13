@@ -54,14 +54,30 @@ namespace BrainBridgePrototype.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             try
             {
-                var comment = await _commentService.UpdateComment(id, commentDto, userId);
-                return Ok(comment);
+                var comment = await _commentService.GetCommentById(id);
+
+                // Check if the comment exists
+                if (comment == null)
+                {
+                    return NotFound();
+                }
+
+                // Check if the user is the owner of the comment or is an admin
+                if (userId != comment.UserId && !User.IsInRole("Admin"))
+                {
+                    return Forbid(); // User is not authorized to update this comment
+                }
+
+                // Update the comment
+                var updatedComment = await _commentService.UpdateComment(id, commentDto, userId);
+                return Ok(updatedComment);
             }
             catch (UnauthorizedAccessException)
             {
                 return Forbid();
             }
         }
+
 
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
