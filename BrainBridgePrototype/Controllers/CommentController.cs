@@ -49,34 +49,30 @@ namespace BrainBridgePrototype.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateComment(int id, CommentDto commentDto)
+        public async Task<IActionResult> UpdateComment(int id, [FromBody] CommentDto commentDto)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            try
+            // Retrieve comment from service
+            var comment = await _commentService.GetCommentById(id);
+
+            // Check if comment exists
+            if (comment == null)
             {
-                var comment = await _commentService.GetCommentById(id);
-
-                // Check if the comment exists
-                if (comment == null)
-                {
-                    return NotFound();
-                }
-
-                // Check if the user is the owner of the comment or is an admin
-                if (userId != comment.UserId && !User.IsInRole("Admin"))
-                {
-                    return Forbid(); // User is not authorized to update this comment
-                }
-
-                // Update the comment
-                var updatedComment = await _commentService.UpdateComment(id, commentDto, userId);
-                return Ok(updatedComment);
+                return NotFound();
             }
-            catch (UnauthorizedAccessException)
+
+            // Check if the user is authorized to update the comment
+            if (comment.UserId != User.FindFirstValue(ClaimTypes.NameIdentifier))
             {
-                return Forbid();
+                return Forbid(); // Return ForbidResult if user is not authorized
             }
+
+            // Update comment
+            var updatedComment = await _commentService.UpdateComment(id, commentDto, comment.UserId);
+
+            // Return updated comment
+            return Ok(updatedComment);
         }
+
 
 
         [HttpDelete("{id}")]
