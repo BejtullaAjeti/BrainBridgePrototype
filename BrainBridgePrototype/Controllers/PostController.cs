@@ -11,7 +11,6 @@ namespace BrainBridgePrototype.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
     public class PostController : ControllerBase
     {
         private readonly IPostService _postService;
@@ -44,17 +43,33 @@ namespace BrainBridgePrototype.Controllers
         [HttpPost]
         public async Task<IActionResult> CreatePost(PostDto postDto)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var post = await _postService.CreatePost(postDto, userId);
-            return Ok(post);
+            try
+            {
+                if (string.IsNullOrEmpty(postDto.UserId))
+                {
+                    return BadRequest("UserId is required.");
+                }
+
+                var post = await _postService.CreatePost(postDto, postDto.UserId);
+                return Ok(post);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
         }
+
 
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdatePost(int id, PostDto postDto)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             try
             {
+                if (string.IsNullOrEmpty(postDto.UserId))
+                {
+                    return BadRequest("UserId is required.");
+                }
+
                 var post = await _postService.GetPostById(id);
 
                 if (post == null)
@@ -62,11 +77,12 @@ namespace BrainBridgePrototype.Controllers
                     return NotFound();
                 }
 
-                if (userId != post.UserId && !User.IsInRole("Admin"))
+                if (postDto.UserId != post.UserId && !User.IsInRole("Admin"))
                 {
-                    return Forbid(); 
+                    return Forbid();
                 }
-                var updatedPost = await _postService.UpdatePost(id, postDto, userId);
+
+                var updatedPost = await _postService.UpdatePost(id, postDto, postDto.UserId);
                 return Ok(updatedPost);
             }
             catch (UnauthorizedAccessException)
@@ -78,8 +94,8 @@ namespace BrainBridgePrototype.Controllers
 
 
 
+
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeletePost(int id)
         {
             await _postService.DeletePost(id);

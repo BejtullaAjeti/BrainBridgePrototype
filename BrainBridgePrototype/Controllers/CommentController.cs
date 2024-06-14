@@ -10,7 +10,6 @@ namespace BrainBridgePrototype.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
     public class CommentController : ControllerBase
     {
         private readonly ICommentService _commentService;
@@ -43,40 +42,58 @@ namespace BrainBridgePrototype.Controllers
         [HttpPost("post/{postId}")]
         public async Task<IActionResult> CreateComment(int postId, CommentDto commentDto)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var comment = await _commentService.CreateComment(commentDto, userId, postId);
-            return Ok(comment);
-        }
+            try
+            {
+                if (string.IsNullOrEmpty(commentDto.UserId))
+                {
+                    return BadRequest("UserId is required.");
+                }
 
+                var comment = await _commentService.CreateComment(commentDto, commentDto.UserId, postId);
+                return Ok(comment);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateComment(int id, [FromBody] CommentDto commentDto)
         {
-            // Retrieve comment from service
-            var comment = await _commentService.GetCommentById(id);
-
-            // Check if comment exists
-            if (comment == null)
+            try
             {
-                return NotFound();
-            }
+                // Retrieve comment from service
+                var comment = await _commentService.GetCommentById(id);
 
-            // Check if the user is authorized to update the comment
-            if (comment.UserId != User.FindFirstValue(ClaimTypes.NameIdentifier))
+                // Check if comment exists
+                if (comment == null)
+                {
+                    return NotFound();
+                }
+
+                // Check if the user is authorized to update the comment
+                if (commentDto.UserId != comment.UserId && !User.IsInRole("Admin"))
+                {
+                    return Forbid(); // Return ForbidResult if user is not authorized
+                }
+
+                // Update comment
+                var updatedComment = await _commentService.UpdateComment(id, commentDto, commentDto.UserId);
+
+                // Return updated comment
+                return Ok(updatedComment);
+            }
+            catch (Exception ex)
             {
-                return Forbid(); // Return ForbidResult if user is not authorized
+                return StatusCode(500, $"Internal server error: {ex.Message}");
             }
-
-            // Update comment
-            var updatedComment = await _commentService.UpdateComment(id, commentDto, comment.UserId);
-
-            // Return updated comment
-            return Ok(updatedComment);
         }
+
+
 
 
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteComment(int id)
         {
             await _commentService.DeleteComment(id);
